@@ -30,6 +30,7 @@ You can configure the database connection using environment variables instead of
 | OMEKA_SITE_TITLE        | Public title of the Omeka S site       |              |
 | OMEKA_TIMEZONE          | Installation timezone (optional)       | UTC          |
 | OMEKA_LOCALE            | Interface locale (optional)            | en_US        |
+| OMEKA_POPULATE_SAMPLE_DATA | Populate with sample data (boolean)    | false        |
 
 > If the `OMEKA_ADMIN_` variables (`EMAIL`, `NAME`, `PASSWORD`, `SITE_TITLE`) are not set, Omeka S will not be configured automatically at startup.
 

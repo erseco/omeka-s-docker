@@ -1,0 +1,80 @@
+[
+    {
+        "title": "Demo Gallery",
+        "slug": "demo-gallery",
+        "items": [
+            {
+                "title": "City Photo",
+                "desc": "Random city photo",
+                "media": {
+                    "o:ingester": "url",
+                    "ingest_url": "https://picsum.photos/seed/city/1280/720.jpg",
+                    "o:source": "https://picsum.photos/seed/city/1280/720.jpg",
+                    "store_original": false
+                }
+            },
+            {
+                "title": "PDF Document",
+                "desc": "Sample PDF",
+                "media": {
+                    "o:ingester": "url",
+                    "ingest_url": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                    "o:source": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+                    "store_original": false
+                }
+            },
+            {
+                "title": "Nature Audio",
+                "desc": "Ambient audio",
+                "media": {
+                    "o:ingester": "oembed",
+                    "o:source": "https://soundcloud.com/forq-music/forq-lavender"
+                }
+            }
+        ]
+    },
+    {
+        "title": "Audio Hub",
+        "slug": "audio-hub",
+        "items": [
+            {
+                "title": "TED Talk",
+                "desc": "Inspirational talk",
+                "media": {
+                    "o:ingester": "oembed",
+                    "o:source": "https://soundcloud.com/tedtalks/how-great-leaders-inspire-action-simon-sinek"
+                }
+            },
+            {
+                "title": "Historic Broadcast",
+                "desc": "Old radio broadcast",
+                "media": {
+                    "o:ingester": "oembed",
+                    "o:source": "https://archive.org/details/OrsonWellesMrBruns"
+                }
+            }
+        ]
+    },
+    {
+        "title": "Open Video Archive",
+        "slug": "open-video-archive",
+        "items": [
+            {
+                "title": "Public Domain Film",
+                "desc": "Silent film",
+                "media": {
+                    "o:ingester": "oembed",
+                    "o:source": "https://archive.org/details/LeVoyageDansLaLune-aTripToTheMoon"
+                }
+            },
+            {
+                "title": "YouTube Lecture",
+                "desc": "Educational lecture",
+                "media": {
+                    "o:ingester": "oembed",
+                    "o:source": "https://www.youtube.com/watch?v=oTugjssqOT0"
+                }
+            }
+        ]
+    }
+]

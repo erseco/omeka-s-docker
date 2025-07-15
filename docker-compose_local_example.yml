@@ -30,6 +30,7 @@ services:
       OMEKA_ADMIN_NAME: "Site Administrator"
       OMEKA_ADMIN_PASSWORD: supersecret
       OMEKA_SITE_TITLE: "My Omeka Site"
+      OMEKA_POPULATE_SAMPLE_DATA: "true"
     volumes:
       - omekas:/var/www/html/volume:Z
 

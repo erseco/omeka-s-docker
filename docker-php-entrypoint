@@ -138,6 +138,14 @@ if [ -n "${OMEKA_ADMIN_EMAIL:-}" ] && [ -n "${OMEKA_ADMIN_NAME:-}" ] && \
   fi
 
   eval "$CMD"
+
+  # Populate sample data if enabled
+  if [ "${OMEKA_POPULATE_SAMPLE_DATA:-false}" = "true" ]; then
+    echo "[Entrypoint] Populating sample data..."
+    php populate-sample-data.php
+  else
+    echo "[Entrypoint] Skipping sample data population."
+  fi
 else
   echo "[Entrypoint] Skipping Omeka S install: missing required environment variables (OMEKA_ADMIN_EMAIL, OMEKA_ADMIN_NAME, OMEKA_ADMIN_PASSWORD, OMEKA_SITE_TITLE)"
 fi

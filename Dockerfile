@@ -1,4 +1,4 @@
-FROM php:8.2-apache-bookworm
+FROM php:8.2-apache-bullseye
 
 # Omeka-S web publishing platform for digital heritage collections (https://omeka.org/s/)
 # Previous maintainers: Oldrich Vykydal (o1da) - Klokan Technologies GmbH  / Eric Dodemont <eric.dodemont@skynet.be>
@@ -18,7 +18,8 @@ RUN ln -sf /dev/stdout /var/log/apache2/access.log && \
     ln -sf /dev/stderr /var/log/apache2/error.log
 
 # Install system dependencies required by PHP extensions and Omeka-S
-RUN apt-get -qq update && \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
+    apt-get -qq update && \
     apt-get -qq -y --no-install-recommends install \
         # Utils needed later
         unzip \
