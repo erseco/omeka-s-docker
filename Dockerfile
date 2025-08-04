@@ -1,4 +1,4 @@
-FROM php:8.2-apache-bookworm
+FROM php:8.2-apache-alpine
 
 # Omeka-S web publishing platform for digital heritage collections (https://omeka.org/s/)
 # Previous maintainers: Oldrich Vykydal (o1da) - Klokan Technologies GmbH  / Eric Dodemont <eric.dodemont@skynet.be>
@@ -7,8 +7,7 @@ FROM php:8.2-apache-bookworm
 RUN a2enmod rewrite
 
 # Set default environment variables
-ENV DEBIAN_FRONTEND=noninteractive \
-    APPLICATION_ENV=production
+ENV APPLICATION_ENV=production
 
 # Use the default production configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
@@ -18,8 +17,8 @@ RUN ln -sf /dev/stdout /var/log/apache2/access.log && \
     ln -sf /dev/stderr /var/log/apache2/error.log
 
 # Install system dependencies required by PHP extensions and Omeka-S
-RUN apt-get -qq update && \
-    apt-get -qq -y --no-install-recommends install \
+RUN apk update && \
+    apk add --no-cache \
         # Utils needed later
         unzip \
         wget \
@@ -28,18 +27,15 @@ RUN apt-get -qq update && \
         poppler-utils \
         netcat-openbsd \
         # PHP Extension Runtime/Build-time Libs (-dev packages needed for compilation)
-        libfreetype6-dev \
-        libjpeg62-turbo-dev \
-        # libjpeg-dev # Likely redundant with libjpeg62-turbo-dev
+        freetype-dev \
+        libjpeg-turbo-dev \
         libpng-dev \
-        zlib1g-dev \
-        libicu-dev \
+        zlib-dev \
+        icu-dev \
         libsodium-dev \
         # For Imagick extension
         imagemagick \
-        libmagickwand-dev \
-    # Cleanup apt cache
-    && apt-get clean
+        imagemagick-dev
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
@@ -67,7 +63,7 @@ RUN unzip -q /var/www/latest_omeka_s.zip -d /var/www/ \
 &&  rm -rf /var/www/html/ \
 &&  mv /var/www/omeka-s/ /var/www/html/
 
-COPY ./imagemagick-policy.xml /etc/ImageMagick-6/policy.xml
+COPY ./imagemagick-policy.xml /etc/ImageMagick-7/policy.xml
 
 # Create one volume for files, config, themes, modules and logs
 RUN mkdir -p /var/www/html/volume/config/ && mkdir -p /var/www/html/volume/files/ && mkdir -p /var/www/html/volume/modules/ && mkdir -p /var/www/html/volume/themes/ && mkdir -p /var/www/html/volume/logs/
