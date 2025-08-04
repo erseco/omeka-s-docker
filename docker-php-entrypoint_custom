@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+chown -R apache:apache /var/www/html/volume
+
 # Check if jq is installed
 if ! command -v jq >/dev/null 2>&1; then
     echo "ERROR: jq is required but not installed. Please install jq first." >&2
