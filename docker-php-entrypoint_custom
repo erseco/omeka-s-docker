@@ -1,0 +1,219 @@
+#!/bin/sh
+set -e
+
+# Check if jq is installed
+if ! command -v jq >/dev/null 2>&1; then
+    echo "ERROR: jq is required but not installed. Please install jq first." >&2
+    exit 1
+fi
+
+
+# Function to check the availability of a database
+check_db_availability() {
+    local db_host="$1"
+    local db_port="$2"
+    echo "Waiting for $db_host:$db_port to be ready..."
+    while ! nc -w 1 "$db_host" "$db_port" > /dev/null 2>&1; do
+        # Show some progress
+        echo -n '.'
+        sleep 1
+    done
+    echo "\n\nGreat, $db_host is ready!"
+}
+
+# Set php.ini and .htaccess according to APPLICATION_ENV
+if [ "$APPLICATION_ENV" = "development" ]; then
+    cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+    sed -i 's|SetEnv APPLICATION_ENV "production"|SetEnv APPLICATION_ENV "development"|' /var/www/html/.htaccess
+# else
+#     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+fi
+
+# Configure database.ini using environment variables only if at least one is set
+if [ -n "${MYSQL_USER:-}" ] || [ -n "${MYSQL_PASSWORD:-}" ] || [ -n "${MYSQL_DATABASE:-}" ] || [ -n "${MYSQL_HOST:-}" ]; then
+  echo "Configuring database.ini from environment variables..."
+  {
+    echo "user     = ${MYSQL_USER:-}"
+    echo "password = ${MYSQL_PASSWORD:-}"
+    echo "dbname   = ${MYSQL_DATABASE:-}"
+    echo "host     = ${MYSQL_HOST:-}"
+    echo "port     = ${MYSQL_TCP_PORT:-3306}"
+
+    if [ -n "${MYSQL_UNIX_PORT:-}" ]; then
+      echo "unix_socket = ${MYSQL_UNIX_PORT}"
+    else
+      echo ";unix_socket ="
+    fi
+
+    if [ -n "${MYSQL_LOG_PATH:-}" ]; then
+      echo "log_path = ${MYSQL_LOG_PATH}"
+    else
+      echo ";log_path ="
+    fi
+  } > /var/www/html/volume/config/database.ini
+else
+  echo "No database environment variables set. Using existing database.ini if available."
+fi
+
+# Set permissions
+chmod 600 /var/www/html/volume/config/database.ini
+chown apache:apache /var/www/html/volume/config/database.ini
+
+# Function to get download URL from GitHub repository URL
+get_github_zip_url() {
+    repo_url="$1"
+    # Normalize URL by removing trailing slashes
+    normalized_url=$(echo "$repo_url" | sed 's|/*$||')
+
+    # Extract owner and repo from URL
+    owner=$(echo "$normalized_url" | sed -n 's|https://github.com/\([^/]*\)/\([^/]*\)$|\1|p')
+    repo=$(echo "$normalized_url" | sed -n 's|https://github.com/\([^/]*\)/\([^/]*\)$|\2|p')
+
+    if [ -z "$owner" ] || [ -z "$repo" ]; then
+        echo "ERROR: Invalid GitHub repository URL: $repo_url" >&2
+        return 1
+    fi
+
+    api_url="https://api.github.com/repos/${owner}/${repo}/releases/latest"
+    download_url=$(curl -s "$api_url" | jq -r '.assets[] | select(.name | endswith(".zip")) | .browser_download_url' | head -n 1)
+
+    if [ -n "$download_url" ] && [ "$download_url" != "null" ]; then
+        echo "$download_url"
+    else
+        echo "ERROR: No ZIP asset found for $repo_url" >&2
+        return 1
+    fi
+}
+
+# Function to process download URLs
+process_download() {
+    url="$1"
+    type="$2"
+
+    case "$url" in
+        *.zip)
+            # Direct ZIP link
+            echo "$url"
+            ;;
+        https://github.com/*)
+            # GitHub repository URL
+            get_github_zip_url "$url"
+            ;;
+        *)
+            echo "ERROR: Unsupported URL format for $type: $url" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Automatically download and install themes
+if [ -n "$OMEKA_THEMES" ]; then
+    echo "Installing themes..."
+    TMPDIR=$(mktemp -d)
+    echo "$OMEKA_THEMES" | while IFS= read -r theme_url; do
+        [ -z "$theme_url" ] && continue
+
+        # Resolve download URL
+        resolved_url=$(process_download "$theme_url" "theme") || continue
+        echo "Resolved theme URL: $resolved_url"
+
+        THEME_NAME=$(basename "$resolved_url" .zip | sed 's/^theme-//')
+        THEME_DIR="/var/www/html/volume/themes/$THEME_NAME"
+
+        if [ -d "$THEME_DIR" ]; then
+            echo "Theme '$THEME_NAME' already exists. Skipping."
+            continue
+        fi
+
+        echo "Downloading theme from $resolved_url"
+        if ! curl -sL "$resolved_url" -o "$TMPDIR/theme.zip"; then
+            echo "ERROR: Failed to download theme from $resolved_url" >&2
+            continue
+        fi
+
+        unzip -oq "$TMPDIR/theme.zip" -d /var/www/html/volume/themes
+    done
+    rm -rf "$TMPDIR"
+else
+    echo "No theme URLs provided. Skipping theme installation."
+fi
+
+# Automatically download and install modules
+if [ -n "$OMEKA_MODULES" ]; then
+    echo "Installing modules..."
+    TMPDIR=$(mktemp -d)
+
+    echo "$OMEKA_MODULES" | while IFS= read -r module_url; do
+        [ -z "$module_url" ] && continue
+
+        # Resolve download URL
+        resolved_url=$(process_download "$module_url" "module") || continue
+        echo "Resolved module URL: $resolved_url"
+
+        MODULE_NAME=$(basename "$resolved_url" .zip)
+        MODULE_DIR="/var/www/html/volume/modules/$MODULE_NAME"
+
+        if [ -d "$MODULE_DIR" ]; then
+            echo "Module '$MODULE_NAME' already exists. Skipping."
+            continue
+        fi
+
+        echo "Downloading module from $resolved_url"
+        if ! curl -sL "$resolved_url" -o "$TMPDIR/module.zip"; then
+            echo "ERROR: Failed to download module from $resolved_url" >&2
+            continue
+        fi
+
+        unzip -oq "$TMPDIR/module.zip" -d /var/www/html/volume/modules
+    done
+
+    rm -rf "$TMPDIR"
+else
+    echo "No module URLs provided. Skipping module installation."
+fi
+
+# Generate PHP custom config based on environment variables
+PHP_CUSTOM_INI="$PHP_INI_DIR/conf.d/docker-php-custom.ini"
+
+{
+  echo "; Custom PHP settings from environment"
+  echo "memory_limit = ${PHP_MEMORY_LIMIT:-512M}"
+  echo "upload_max_filesize = ${PHP_UPLOAD_MAX_FILESIZE:-128M}"
+  echo "post_max_size = ${PHP_POST_MAX_SIZE:-128M}"
+  echo "max_execution_time = ${PHP_MAX_EXECUTION_TIME:-300}"
+} > "$PHP_CUSTOM_INI"
+
+echo "[Entrypoint] Using custom PHP configuration:"
+cat "$PHP_CUSTOM_INI"
+
+# Install Omeka S only if required environment variables are set and not empty
+if [ -n "${OMEKA_ADMIN_EMAIL:-}" ] && [ -n "${OMEKA_ADMIN_NAME:-}" ] && \
+   [ -n "${OMEKA_ADMIN_PASSWORD:-}" ] && [ -n "${OMEKA_SITE_TITLE:-}" ]; then
+  echo "[Entrypoint] Installing Omeka S via CLI..."
+
+  # If MYSQL_HOST is set, check the availability of the database
+  if [ -n "$MYSQL_HOST" ]; then
+      check_db_availability "$MYSQL_HOST" 3306
+  fi
+
+  CMD="php install_cli.php \
+    --email=\"$OMEKA_ADMIN_EMAIL\" \
+    --name=\"$OMEKA_ADMIN_NAME\" \
+    --password=\"$OMEKA_ADMIN_PASSWORD\" \
+    --title=\"$OMEKA_SITE_TITLE\""
+
+  if [ -n "${OMEKA_TIMEZONE:-}" ]; then
+    CMD="$CMD --timezone=\"$OMEKA_TIMEZONE\""
+  fi
+
+  if [ -n "${OMEKA_LOCALE:-}" ]; then
+    CMD="$CMD --locale=\"$OMEKA_LOCALE\""
+  fi
+
+  eval "$CMD"
+else
+  echo "[Entrypoint] Skipping Omeka S install: missing required environment variables (OMEKA_ADMIN_EMAIL, OMEKA_ADMIN_NAME, OMEKA_ADMIN_PASSWORD, OMEKA_SITE_TITLE)"
+fi
+
+# Run the official Docker PHP entrypoint
+exec /usr/local/bin/docker-php-entrypoint "$@"
