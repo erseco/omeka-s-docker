@@ -37,7 +37,7 @@ You can configure the database connection using environment variables instead of
 
 Recent versions are available directly from Docker Hub  https://hub.docker.com/r/giocomai/omeka-s-docker
 
-Check out the relevant tags. At this stage, the latest Omeka S Omeka S 4.1.1 is kept reasonably updated. 
+Check out the relevant tags. At this stage, the latest Omeka S Omeka S 4.2.0 is kept reasonably updated. 
 
 ## docker-compose examples
 

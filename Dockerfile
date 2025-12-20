@@ -1,4 +1,4 @@
-FROM php:8.2-apache-bookworm
+FROM php:8.4-apache-trixie
 
 # Omeka-S web publishing platform for digital heritage collections (https://omeka.org/s/)
 # Previous maintainers: Oldrich Vykydal (o1da) - Klokan Technologies GmbH  / Eric Dodemont <eric.dodemont@skynet.be>
@@ -63,7 +63,7 @@ RUN install-php-extensions \
 
 # Add the Omeka-S PHP code
 # Latest Omeka version, check: https://omeka.org/s/download/
-RUN wget --no-verbose "https://github.com/omeka/omeka-s/releases/download/v4.1.1/omeka-s-4.1.1.zip" -O /var/www/latest_omeka_s.zip
+RUN wget --no-verbose "https://github.com/omeka/omeka-s/releases/download/v4.2.0/omeka-s-4.2.0.zip" -O /var/www/latest_omeka_s.zip
 RUN unzip -q /var/www/latest_omeka_s.zip -d /var/www/ \
 &&  rm /var/www/latest_omeka_s.zip \
 &&  rm -rf /var/www/html/ \
