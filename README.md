@@ -10,13 +10,13 @@ You can configure the database connection using environment variables instead of
 
 | Variable                | Description                            | Default      |
 |-------------------------|----------------------------------------|--------------|
-| MYSQL_DATABASE_USER     | Database username                      |              |
-| MYSQL_DATABASE_PASSWORD | Database password                      |              |
-| MYSQL_DATABASE_NAME     | Database name                          |              |
-| MYSQL_DATABASE_HOST     | Database host                          |              |
-| MYSQL_DATABASE_PORT     | Database port (optional)               | 3306         |
-| MYSQL_DATABASE_SOCKET   | Database unix socket path (optional)   |              |
-| MYSQL_DATABASE_LOG_PATH | Database log path (optional)           |              |
+| MYSQL_USER              | Database username                      |              |
+| MYSQL_PASSWORD          | Database password                      |              |
+| MYSQL_DATABASE          | Database name                          |              |
+| MYSQL_HOST              | Database host                          |              |
+| MYSQL_PORT              | Database port (optional)               | 3306         |
+| MYSQL_SOCKET            | Database unix socket path (optional)   |              |
+| MYSQL_LOG_PATH          | Database log path (optional)           |              |
 | APPLICATION_ENV         | App mode: development or production    | production   |
 | OMEKA_THEMES            | List of theme URLs (GitHub repo or zip)|              |
 | OMEKA_MODULES           | List of module URLs (GH repo or zip)   |              |
